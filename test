@@ -1,0 +1,183 @@
+# $Id: //clientsystems/pfg/pdf2print/MAIN/config/corp_map.cfg#54 $
+# $IBSrevision: 2.9.0 $DateTime: 2025/10/28 13:42:13 $
+#
+# Each record is composed of the following pipe-separated fields.  Whitespace before or after 
+# each value will be stripped when read (leaving any embedded whitespace to be treated 
+# literally).  Does NOT handle embedded pipes; so don't use them:
+#
+# <client_id>:
+#   A case-insensative string which uniquely identifies the client.
+#
+# <app_id_regex>:
+#   Each input file to the preprocessor is associated with, what we're calling here, an 
+#   "application identifier" (it's in the file name), which is a client-specific string that 
+#   uniquely identifies a set of configurations (corp-level) to run the file with.
+#
+#   For example, for PFG files, "CGS72190.N" (see below where it's used) indicates a particular 
+#   "job name" (CGS72190, a value which is used by the client to group various web API orders 
+#   together) corresponding to some of their "group billing statements", followed by a "N" 
+#   which stands for non-bulk delivery and a period separating the two values for readability.  
+#
+#   Each row in this config file corresponds to a single set of such configurations, and this 
+#   field, <app_id_regex>, is a A Perl RegEx which is matched against the input file's 
+#   application ID, order to find the appropriate config row below in this file to run with.
+#   
+#   The first config row found whose <client_id> matches the input file's client ID, and whose 
+#   <app_id_regex> matches the file's application ID (both matches are case-insensative and the 
+#   regex is surrounded with beginning/end-of-line anchors) will be used.
+#
+#   Example: If your <app_id_regex> is "ABC[01]23", it will be matched against the candidate 
+#   application ID value using the regex "^ABC[01]23$" (and uses the global case-insensative 
+#   flag).  If multiple rows/records below match the <client_id>/<app_id_regex> combination, 
+#   then the first matching row is used; so BE MINDFUL OF THIS AND ADD YOUR NEW ENTRIES TO THE 
+#   BOTTOM OF THE FILE TO HELP AVOID CAUSING REGRESSIONS for other client configurations.
+#
+# <prod_corps>:
+#   A comma-separated list of production Infact Corps, one of which to be assigned to this run 
+#   if the input is a production file.  The first corp found to have an open cycle for the 
+#   month specified in the RUNDATE will be assigned to the run (in other words you may 
+#   optionally specify "overflow corps" by including more than one corp in this field).  The 
+#   order of the list of corps reflects the precedence of their assignment.
+#   (If you're thinking of adding the option to have dashes in corps to specify a range, please 
+#   do not, as it makes it impossible to grep for a particular corp number when dealing with a 
+#   prod issue.)
+#
+# <test_corps>:
+#   Optional, a comma-separated list of UAT Infact Corps.  It functions the same way as <prod 
+#   corps>, but if the file is a test file, one of these test corps will be assigned to the run 
+#   instead of a prod corp.
+#
+# <config_subdir>:
+#   Every config file which is unique to the given corp range should be under this 
+#   system/config/ sub-directory.
+#
+# <is_bulk_shipping>:
+#   Y/N value; specifies whether or not the print output is assigned to bulk shipping.
+#
+# <pdf2afp_version>:
+#   Specifies which version of the pdf2afp module to use (All older jar files will remain 
+#   available; so that all corps don't need to be regression tested if only one or a few need a 
+#   newer version).
+#
+# <modifyafp_version>:
+#   Specifies which version of the modifyafp module to use (All older jar files will remain 
+#   available; so that all corps don't need to be regression tested if only one or a few need a 
+#   newer version).
+#
+# <compart_version>:
+#   Specifies which version of the compart toolkit to use with the pdf2afp
+#   module. (older versions will remain available).
+#
+# <infact_site>:
+#   Specfies which Infact Site to deliver the print file to.  May be one of:
+#   EDH, KC, HAR, CPL, CPL_US_ONLY
+#
+# <do_billing>:
+#   Y/N value; specifies whether or not to execute the Billing API step. (Billing codes should 
+#   come from each app's afpgen.cfg; so this step is standardized.)
+#
+# <comments>:
+#   Any short comments which might be useful to know about this specific app/corp which aren't 
+#   already covered by the other fields in this file.
+#   (Primarily from an orchestration/data-flow perspective, as opposed to composition details; 
+#   think about what you might want to know when called at 02:00 in the morning to troubleshoot 
+#   a prod issue.)
+#
+# PLEASE USE ONLY SPACES (NO TABS) BELOW, TO ENSURE THAT EVERYONE SEES THE SAME SPACING AND 
+# KEEP THE COLUMN ALIGNMENTS CONSISTENT WHERE POSSIBLE, AS YOU ADD ROWS.
+# (I suggest turning off line-wrap in your text editor, for readability, as well.)
+#
+# <client_id> | <app_id_regex> | <prod_corps> | <test_corps> | <config_subdir> | <is_bulk_shipping> | <pdf2afp_version> | <modifyafp_version> | <compart_version> | <infact_site> | <do_billing> | <comments>
+# PFG wave 1:                                                                                                                    
+PFG           | CGS72190\.N    | D7076,D2698  | D7087        | pfg/CGS72190    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Group_Billing_Statement.pub
+PFG           | E7132\.B       | E7132,E7134  | E7136        | pfg/E7132       | Y                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | "Job Names": CGS71290,CGS71270; Input PDFs originate from pfg/compose Compass_id_cards.pub
+PFG           | CGS71280\.B    | D2692,D2693  | D2694        | pfg/CGS71280    | Y                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Compass_id_cards.pub
+PFG           | CGS71260\.N    | D6920        | D6923        | pfg/CGS71260    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Compass_id_cards.pub
+# PFG wave 2:                                                                                                                                
+PFG           | CGS72110\.N    | D6808,F0285  | D8858        | pfg/CGS72110    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from many pfg/compose NQCorp*.pub files
+PFG           | CGS72630\.B    | E7032        | E7034        | pfg/CGS72630    | Y                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose InvestOneTPS.pub
+PFG           | CGS72590\.N    | E7024,F0217  | E7029        | pfg/CGS72590    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg document store (not our composition)
+PFG           | CGS72510\.N    | E7022,F0215  | E7027        | pfg/CGS72510    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose TXTtoPDF.pub (EBR)
+PFG           | CGS72620\.N    | E7023,F0216  | E7028        | pfg/CGS72620    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose TXTtoPDF.pub (spectre)
+PFG           | CGS72660\.N    | E7025,F0218  | E7030        | pfg/CGS72660    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose TrustAdvices.pub
+PFG           | CGS34290\.N    | D6804,F0289  | D8855        | pfg/CGS34290.N  | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose COMPASS_TRUE_OPEN_ENROLLMENT.pub
+PFG           | CGS71530\.N    | D6811,F0294  | D8861        | pfg/CGS71530    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Compass_COBRA_Letters.pub
+PFG           | CGS61680\.N    | D6800,F0245  | D8850        | pfg/CGS61680    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose MaturingAccountsNotices.pub
+PFG           | CGS61660\.N    | D6792,F0239  | D8842        | pfg/CGS61660    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose MaturingAccountsNotices.pub
+PFG           | CGS61670\.N    | D6793,F0240  | D8843        | pfg/CGS61670    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose MaturingAccountsNotices.pub
+PFG           | CGS61690\.B    | D6268,F1822,F1823,F1824,F1825,F1826,F1827,F1828,F1829,F1830,F1831,F1832,F1833,F1834,F1835,F1836,F1837,F1838,F1839,F1840,F1841,F1842,F1843,F1844,F1845,F1846,F1847,F1848,F1849,F1850,F1851 | D6328 | pfg/CGS61690 | Y | 0.0.1 | 0.0.11 | 202507 | EDH | N | Input PDFs originate from pfg/compose MaturingAccountsNotices.pub 
+# PFG wave 3:
+PFG           | OTH65300\.N    | F5920,F5921  | F5922        | pfg/OTH65300    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Not composed by BRCC.
+PFG           | CGS34290\.B    | F5923,F5924  | F2925        | pfg/CGS34290.B  | Y                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose COMPASS_TRUE_OPEN_ENROLLMENT.pub
+PFG           | GJ81909T\.N    | D8695,D8712,F0264 | D8746   | pfg/GJ81909T    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose SBD_Renewal_Letter.pub, SBD_Broker_Mail_Cover_Sheet.pub, SBD_Policyholder_mail_Cover_Sheet.pub
+PFG           | CGS38920\.N    | D6806,F0247  | D8856        | pfg/CGS38920    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose PURCHCERT.pub
+PFG           | CGS73060\.N    | F5929,F5930  | F5931        | pfg/CGS73060    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose SBD_Schedule_A_Worksheet.pub
+# Job D5763 is moved to wave 5
+#PFG           | D5763\.N       | D5763,F0225  | D5829        | pfg/D5763       | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRX.pub, GEPLETRA_EDF.pub
+PFG           | ANN00160\.N    | D5780,F0229  | D5846        | pfg/ANN00160    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose LETTERE.pub
+PFG           | CGS42760\.N    | D6297,F0306  | D6357        | pfg/CGS42760    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose ActivityConfirmations.pub
+PFG           | A\d{6}L\.B     | D0492        | D0493        | pfg/AXXXXXXL    | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | ESOP Statements (Crystal generated, ESOPPrintOrderCMP)
+PFG           | A\d{6}S\.B     | D0494        | D0495        | pfg/AXXXXXXS    | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | ESOP Statements (Crystal generated, ESOPPrintOrderCMP)
+PFG           | A\d{6}U\.B     | D0496        | D0497        | pfg/AXXXXXXU    | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | ESOP Statements (Crystal generated, ESOPPrintOrderCMP)
+PFG           | A\d{6}I\.N     | D0490        | D0491        | pfg/AXXXXXXI    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | ESOP Statements (Crystal generated, ESOPPrintOrderCMP)
+PFG           | CGS71681\.N    | F7317,F7318,F7319 | F7320,F7321,F7322,F7323,F7324,F7325,F7326,F7327,F7328,F7329,F7330,F7331       | pfg/CGS71681 | N | 0.0.1 | 0.0.11 | 202507 | HAR | N        | Not composed by BRCC.
+PFG           | CGS7223L\.N    | F7302,F7303,F7304 | F7305,F7306,F7307,F7308,F7309,F7310,F7311,F7312,F7313,F7314,F7315,F7316       | pfg/CGS7223L | N | 0.0.1 | 0.0.11 | 202507 | HAR | N        | Not composed by BRCC.
+PFG           | CGS72230\.N    | F8158,F8159,F8160 | F8161,F8162,F8163,F8164,F8165,F8166,F8167,F8168,F8169,F8170,F8171,F8172 | pfg/CGS72230 | N | 0.0.1 | 0.0.11 | 202507 | HAR | N        | Not composed by BRCC.
+PFG           | CGS71680\.N    | F8173,F8174,F8175 | F8176,F8177,F8187 | pfg/CGS71680    | N        | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Not composed by BRCC.
+PFG           | VJ9162I0\.N    | D6803,F0246  | D8853        | pfg/VJ9162I0    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Not composed by BRCC.
+# PFG wave 4:
+PFG           | ANN00100\.N    | F7572,F7573,F7574  | F7575,F7576,F7577,F7578,F7579,F7580,F7581,F7582,F7583,F7584,F7585,F7586        | pfg/ANN00100    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose FADASTMTS.pub, DIASTMTS_EDF.pub, RILAAnnuityConfirmations.pub, RILASTMT.pub
+PFG           | ANN00080\.N    | F7557,F7558,F7559  | F7560,F7561,F7562,F7563,F7564,F7565,F7566,F7567,F7568,F7569,F7570,F7571        | pfg/ANN00080    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose FADASTMTS.pub, DIASTMTS_EDF.pub, RILAAnnuityConfirmations.pub, RILASTMT.pub
+PFG           | ANN00060\.N    | F7542,F7543,F7544  | F7545,F7546,F7547,F7548,F7549,F7550,F7551,F7552,F7553,F7554,F7555,F7556        | pfg/ANN00060    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose FADASTMTS.pub, DIASTMTS_EDF.pub, RILAAnnuityConfirmations.pub, RILASTMT.pub
+PFG           | ANN00130\.N    | F7587,F7588,F7589  | F7590,F7591,F7592,F7593,F7594,F7595,F7596,F7597,F7598,F7599,F7600,F7601        | pfg/ANN00130    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose FADASTMTS.pub, DIASTMTS_EDF.pub, RILAAnnuityConfirmations.pub, RILASTMT.pub
+PFG           | ANN00120\.N    | F7287,F7288,F7289  | F7290,F7291,F7292,F7293,F7294,F7295,F7296,F7297,F7298,F7299,F7300,F7301 | pfg/ANN00120 | N | 0.0.1 | 0.0.11 | 202507 | HAR  | N             | Input PDFs originate from pfg/compose IncomeVerificationLetter.pub, AnnBEIlls.pub, Annuity-Pre-Retirement Cert.pub
+PFG           | OTH65310\.N    | D6791,F0285  | D8841        | pfg/OTH65310.N  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub
+PFG           | OTH65310\.B    | F8053,F8054,F8055  | F8056,F8057,F8058,F8059,F8060,F8061,F8062,F8063,F8064,F8065,F8066,F8067        | pfg/OTH65310.B  | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub
+PFG           | OTH65490\.N    | D8698,D8713,F0265  | D8747   | pfg/OTH65490    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub
+PFG           | OTH65330\.N    | D8692,D8709,F0261  | D8742   | pfg/OTH65330    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub  
+PFG           | PIP0001R\.N    | F8113,F8114,F8115  | F8116,F8117,F8118,F8119,F8120,F8121,F8122,F8123,F8124,F8125,F8126,F8127       | pfg/PIP0001R.N  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose CoverSheet.pub
+PFG           | PIP0001R\.B    | F8098,F8099,F8100  | F8101,F8102,F8103,F8104,F8105,F8106,F8107,F8108,F8109,F8110,F8111,F8112       | pfg/PIP0001R.B  | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose CoverSheet.pub
+PFG           | OTH54630\.N    | D8699,D8716,F0233 | D8750        | pfg/OTH54630    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose PrivacyNotices.pub
+PFG           | CGS72130\.N    | D8693,D8710,F0262 | D8744   | pfg/CGS72130    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose EA Fraud Notification Letter.pub
+PFG           | PRI20000\.N    | F8128,F8129,F8130  | F8131,F8132,F8133,F8134,F8135,F8136,F8137,F8138,F8139,F8140,F8141,F8142        | pfg/PRI20000    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose PSI_EDF_CoverSheet.pub
+PFG           | ANN00090\.N    | E7026,F0219  | E7031        | pfg/ANN00090    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose RIS_EDF_CoverSheet.pub
+PFG           | ANN00010\.N    | F7481,F7482,F7483 | F7484,F7485,F7486,F7487,F7488,F7489,F7490,F7491,F7492,F7493,F7494,F7495        | pfg/ANN00010    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose IncomeVerificationLetter.pub, AnnBEIlls.pub, Annuity-Pre-Retirement Cert.pub
+PFG           | ANN00050\.N    | F7526,F7527,F7528,F7529  | F7530,F7531,F7532,F7533,F7534,F7535,F7536,F7537,F7538,F7539,F7540,F7541      | pfg/ANN00050.N  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose IncomeVerificationLetter.pub, AnnBEIlls.pub, Annuity-Pre-Retirement Cert.pub
+PFG           | ANN00050\.B    | F7511,F7512,F7513 | F7514,F7515,F7516,F7517,F7518,F7519,F7520,F7521,F7522,F7523,F7524,F7525       | pfg/ANN00050.B  | Y                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose IncomeVerificationLetter.pub, AnnBEIlls.pub, Annuity-Pre-Retirement Cert.pub
+PFG           | ANN00030\.N    | F7496,F7497,F7498 | F7499,F7500,F7501,F7502,F7503,F7504,F7505,F7506,F7507,F7508,F7509,F7510       | pfg/ANN00030    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose IncomeVerificationLetter.pub, AnnBEIlls.pub, Annuity-Pre-Retirement Cert.pub, SprinterCerts.pub
+PFG           | CGS72050\.N    | F7633,F7634,F7635 | F7636,F7637,F7638,F7639,F7640,F7641,F7642,F7643,F7644,F7645,F7646,F7647       | pfg/CGS72050    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose PDAP_ID_CARDS.pub
+PFG           | CGS73040\.N    | F8023,F8024,F8025 | F8026,F8027,F8028,F8029,F8030,F8031,F8032,F8033,F8034,F8035,F8036,F8037       | pfg/CGS73040    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose PDAP_ID_CARDS.pub
+PFG           | CGS72580\.N    | F7648,F7649,F7650 | F7651,F7652,F7653,F7654,F7655,F7656,F7657,F7658,F7659,F7660,F7661,F7662       | pfg/CGS72580    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose RequiredMinimumDistribution.pub
+PFG           | CGS73000\.N    | F7963,F7964,F7965 | F7966,F7967,F7968,F7969,F7970,F7971,F7972,F7973,F7974,F7975,F7976,F7977       | pfg/CGS73000    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose PrintPartnerCoverSheet.pub
+PFG           | IPN80050\.N    | F8038,F8039,F8040 | F8041,F8042,F8043,F8044,F8045,F8046,F8047,F8048,F8049,F8050,F8051,F8052       | pfg/IPN80050    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose RealStart_Enroll_Postcards_JSON.pub
+PFG           | BNK01982\.N    | F8707,F8708,F8709 | F8710,F8711,F8712,F8713,F8714,F8715,F8716,F8717,F8718,F8719,F8720,F8721       | pfg/BNK01982    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub         
+PFG           | BNK04197\.N    | F8722,F8723,F8724 | F8725,F8726,F8727,F8728,F8729,F8730,F8731,F8732,F8733,F8734,F8735,F8736       | pfg/BNK04197    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Bank.pub
+
+# implemented, but then moved out of wave 4:
+#PFG           | CGS72850\.N    | F6970,F6971  | F6972        | pfg/CGS72850    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72900\.N    | F6982,F6983  | F6984        | pfg/CGS72900    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72920\.N    | F6985,F6986  | F6987        | pfg/CGS72920    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72930\.N    | F6988,F6989  | F6990        | pfg/CGS72930    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72940\.N    | F6991,F6992  | F6993        | pfg/CGS72940    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72950\.N    | F6994,F6995  | F6996        | pfg/CGS72950    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72960\.N    | F6997,F6998  | F6999        | pfg/CGS72960    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+#PFG           | CGS72970\.N    | F7000,F7001  | F7002        | pfg/CGS72970    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose JourneyLettersJSON.pub
+# PFG wave 5:
+PFG            | CGS85470\.N    | D6294,F0236  | D6354 | pfg/CGS85470    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRJ.pub
+PFG            | MJ747190\.B    | F8493,F8494,F8495  | F8496,F8497,F8498,F8499,F8500,F8501,F8502,F8503,F8504,F8506,F8507   | pfg/MJ747190 | Y   | 0.0.1             | 0.0.11              | 202507       | EDH         | N            | Input PDFs originate from pfg/compose Confirmations.pub, Ltrlife.pub, FixedLifeStatement.pub, ICSLifeStatement.pub, IndexedStatement.pub, TermStatement.pub, VariableLifeStatement.pub, Life_Cover_Page.pub, Direct_Bills.pub
+PFG            | MJ747180\.N    | D6964,D2699,F0221  | D6971    | pfg/MJ747180  | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Confirmations.pub, Ltrlife.pub, FixedLifeStatement.pub, ICSLifeStatement.pub, IndexedStatement.pub, TermStatement.pub, VariableLifeStatement.pub, Life_Cover_Page.pub, Direct_Bills.pub
+PFG            | D5763\.N       | D5763,F0225        | D5829    | pfg/D5763     | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRX.pub, GEPLETRA_EDF.pub, FASTMTS.pub
+PFG            | MJ9162B0\.N    | D8694,D8711,F0231  | D8745    | pfg/MJ9162B0  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
+PFG            | MJ9162B3\.N    | D8698,D8715,F0266  | D8749    | pfg/MJ9162B3  | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub      
+PFG            | MJ9162B5\.N    | D8691,D8708,F0230  | D8742    | pfg/MJ9162B5  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
+PFG            | MJ9162I0\.N    | D5785,D5760  | D5851 | pfg/MJ9162I0    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
+PFG            | MJ9162J5\.N    | D7058        | D7063 | pfg/MJ9162J5    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
+PFG            | MJ9162N0\.B    | F8508,F8509,F8510  | F8511,F8512,F8513,F8514,F8515,F8516,F8517,F8518,F8519,F8520,F8521,F8522 | pfg/MJ9162N0    | Y        | 0.0.1        | 0.0.11        | 202507        | HAR        | N           | Input PDFs originate from pfg/compose Direct_Bills.pub
+PFG            | MJ9162R0\.N    | D6306,F0307  | D6366 | pfg/MJ9162R0    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
+PFG            | MJ9162S0\.N    | D5781,F0257  | D5847 | pfg/MJ9162S0    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
+PFG            | CGS71520\.N    | D8704,D8721,F0234  | D8755    | pfg/CGS71520  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N              | Input PDFs originate from pfg/compose Access_Pin.pub
+PFG            | PSI00010\.N    | D7073,D2697,F0223  | D7084    | pfg/PSI00010  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N              | Input PDFs originate from pfg/compose PSI Fidelity RAP Letter.pub 
+PFG            | CGS72010\.N    | D7069,F0220  | D7080 | pfg/CGS72010    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose SuitabilityLetterEDF.pub
+PFG            | CGS72740\.N    | F8478,F8479,F8480  | F8481,F8482,F8483,F8484,F8485,F8486,F8487,F8488,F8489,F8490,F8491,F8492 | pfg/CGS72740   | N         | 0.0.1        | 0.0.11        | 202507        | EDH        | N           | Input PDFs originate from pfg/compose FDH_ReCred_Letters.pub
+PFG            | PRI02090\.N    | D6801,E9294  | D8851 | pfg/PRI02090    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Not composed by BRCC.  
+      
