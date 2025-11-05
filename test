@@ -1,5 +1,5 @@
-# $Id: //clientsystems/pfg/pdf2print/MAIN/config/corp_map.cfg#54 $
-# $IBSrevision: 2.9.0 $DateTime: 2025/10/28 13:42:13 $
+# $Id: //clientsystems/pfg/pdf2print/MAIN/config/corp_map.cfg#56 $
+# $IBSrevision: 2.11.0 $DateTime: 2025/10/30 12:11:45 $
 #
 # Each record is composed of the following pipe-separated fields.  Whitespace before or after 
 # each value will be stripped when read (leaving any embedded whitespace to be treated 
@@ -164,12 +164,12 @@ PFG           | BNK04197\.N    | F8722,F8723,F8724 | F8725,F8726,F8727,F8728,F87
 PFG            | CGS85470\.N    | D6294,F0236  | D6354 | pfg/CGS85470    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRJ.pub
 PFG            | MJ747190\.B    | F8493,F8494,F8495  | F8496,F8497,F8498,F8499,F8500,F8501,F8502,F8503,F8504,F8506,F8507   | pfg/MJ747190 | Y   | 0.0.1             | 0.0.11              | 202507       | EDH         | N            | Input PDFs originate from pfg/compose Confirmations.pub, Ltrlife.pub, FixedLifeStatement.pub, ICSLifeStatement.pub, IndexedStatement.pub, TermStatement.pub, VariableLifeStatement.pub, Life_Cover_Page.pub, Direct_Bills.pub
 PFG            | MJ747180\.N    | D6964,D2699,F0221  | D6971    | pfg/MJ747180  | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Confirmations.pub, Ltrlife.pub, FixedLifeStatement.pub, ICSLifeStatement.pub, IndexedStatement.pub, TermStatement.pub, VariableLifeStatement.pub, Life_Cover_Page.pub, Direct_Bills.pub
-PFG            | D5763\.N       | D5763,F0225        | D5829    | pfg/D5763     | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRX.pub, GEPLETRA_EDF.pub, FASTMTS.pub
+#PFG            | D5763\.N       | D5763,F0225        | D5829    | pfg/D5763     | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose GEPLETRX.pub, GEPLETRA_EDF.pub, FASTMTS.pub
 PFG            | MJ9162B0\.N    | D8694,D8711,F0231  | D8745    | pfg/MJ9162B0  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
 PFG            | MJ9162B3\.N    | D8698,D8715,F0266  | D8749    | pfg/MJ9162B3  | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub      
 PFG            | MJ9162B5\.N    | D8691,D8708,F0230  | D8742    | pfg/MJ9162B5  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
-PFG            | MJ9162I0\.N    | D5785,D5760  | D5851 | pfg/MJ9162I0    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
-PFG            | MJ9162J5\.N    | D7058        | D7063 | pfg/MJ9162J5    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
+PFG            | MJ9162I0\.N    | D8691,D8708,F0230  | D8742    | pfg/MJ9162I0    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
+PFG            | MJ9162J5\.N    | D8691,D8708,F0230  | D8742    | pfg/MJ9162J5    | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub 
 PFG            | MJ9162N0\.B    | F8508,F8509,F8510  | F8511,F8512,F8513,F8514,F8515,F8516,F8517,F8518,F8519,F8520,F8521,F8522 | pfg/MJ9162N0    | Y        | 0.0.1        | 0.0.11        | 202507        | HAR        | N           | Input PDFs originate from pfg/compose Direct_Bills.pub
 PFG            | MJ9162R0\.N    | D6306,F0307  | D6366 | pfg/MJ9162R0    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
 PFG            | MJ9162S0\.N    | D5781,F0257  | D5847 | pfg/MJ9162S0    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose Direct_Bills.pub
@@ -177,5 +177,5 @@ PFG            | CGS71520\.N    | D8704,D8721,F0234  | D8755    | pfg/CGS71520  
 PFG            | PSI00010\.N    | D7073,D2697,F0223  | D7084    | pfg/PSI00010  | N                  | 0.0.1             | 0.0.11              | 202507            | HAR          | N              | Input PDFs originate from pfg/compose PSI Fidelity RAP Letter.pub 
 PFG            | CGS72010\.N    | D7069,F0220  | D7080 | pfg/CGS72010    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Input PDFs originate from pfg/compose SuitabilityLetterEDF.pub
 PFG            | CGS72740\.N    | F8478,F8479,F8480  | F8481,F8482,F8483,F8484,F8485,F8486,F8487,F8488,F8489,F8490,F8491,F8492 | pfg/CGS72740   | N         | 0.0.1        | 0.0.11        | 202507        | EDH        | N           | Input PDFs originate from pfg/compose FDH_ReCred_Letters.pub
-PFG            | PRI02090\.N    | D6801,E9294  | D8851 | pfg/PRI02090    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Not composed by BRCC.  
+#PFG           | PRI02090\.N    | D6801,E9294  | D8851 | pfg/PRI02090    | N                  | 0.0.1             | 0.0.11              | 202507            | EDH          | N             | Not composed by BRCC.  
       
