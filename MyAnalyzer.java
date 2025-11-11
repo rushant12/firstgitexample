@@ -421,12 +421,171 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		}
 
 		insertIPOAfterEAG(stmt);
+		
+		// Insert Blank Page After Each Page
+		String insertBlank = DataPrepConfig.get().getINSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE();
+		msger.logDebug("INSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE flag value: " + insertBlank);
+		if ("Y".equalsIgnoreCase(insertBlank)) {
+		    msger.logDebug("INSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE is enabled.");
+		    stmt.setStatementRecords(insertBlankPageAfterEachInputPage(stmt));
+		}
 
 		insertNewPages(stmt);
 
 		PerformanceMap.addDuration("modifyAFP", System.nanoTime() - startTime);
 
 		return stmt;
+	}
+	
+	private List<AfpRec> insertBlankPageAfterEachInputPage(Statement stmt)
+	        throws StatementCustomException {
+
+	    List<AfpRec> modifiedList = new ArrayList<>();
+	    List<AfpRec> inputRecords = stmt.getStatementRecords();
+	    int pageCounter = 0;
+
+	    for (AfpRec rec : inputRecords) {
+	        String tla = rec.getTla();
+
+	        if (List.of("BPG", "BAG", "EAG", "EPG").contains(tla)) {
+	            pageCounter = handleRenumbering(rec, modifiedList, pageCounter);
+	            if ("EPG".equals(tla)) {
+	                insertBlankPage(modifiedList, pageCounter);
+	            }
+	        } else {
+	            modifiedList.add(rec);
+	        }
+	    }
+
+	    msger.logDebug("Total logical pages (including blanks): " + (pageCounter * 2));
+	    return modifiedList;
+	}
+	
+	private int handleRenumbering(AfpRec rec, List<AfpRec> modifiedList, int pageCounter)
+	        throws StatementCustomException {
+
+	    String tla = rec.getTla();
+
+	    if ("BPG".equals(tla)) {
+	        pageCounter++;
+	    }
+
+	    int newPageNum = (pageCounter * 2) - 1;
+	    String newPageName = String.valueOf(newPageNum);
+	    msger.logDebug("Renumbering " + tla + " record to page " + newPageName);
+
+	    try {
+	        AfpRec newRec;
+
+	        switch (tla) {
+	            case "BPG":
+	                AfpCmdBPG bpgCmd = new AfpCmdBPG(new AfpCmdRaw(rec));
+	                bpgCmd.setPGEName(CommonUtils.trimAndPad(newPageName));
+	                newRec = bpgCmd.toAfpRec((short) 0, 0);
+	                break;
+
+	            case "BAG":
+	                AfpCmdBAG bagCmd = new AfpCmdBAG(CommonUtils.trimAndPad(newPageName));
+	                newRec = bagCmd.toAfpRec((short) 0, 0);
+	                break;
+
+	            case "EAG":
+	                AfpCmdEAG eagCmd = new AfpCmdEAG(CommonUtils.trimAndPad(newPageName));
+	                newRec = eagCmd.toAfpRec((short) 0, 0);
+	                break;
+
+	            case "EPG":
+	                AfpCmdEPG epgCmd = new AfpCmdEPG(CommonUtils.trimAndPad(newPageName));
+	                newRec = epgCmd.toAfpRec((short) 0, 0);
+	                break;
+
+	            default:
+	                newRec = rec;
+	                break;
+	        }
+
+	        modifiedList.add(newRec);
+
+	    } catch (Exception e) {
+	        throw new StatementCustomException("Error renumbering " + tla + " for page " + newPageName, e);
+	    }
+
+	    return pageCounter;
+	}
+	
+	private void insertBlankPage(List<AfpRec> modifiedList, int pageCounter)
+	        throws StatementCustomException {
+
+	    double pageDPI = 1440;
+	    double widthInInches = 8.5;
+	    double heightInInches = 11.0;
+	    int blankPageNum = pageCounter * 2; // even
+	    String blankPageName = String.valueOf(blankPageNum);
+	    msger.logDebug("Inserting blank page " + blankPageName +
+	                   " after input page " + ((pageCounter * 2) - 1));
+
+	    try {
+	        modifiedList.add(new AfpCmdBPG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
+	        modifiedList.add(new AfpCmdBAG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
+	        modifiedList.add(createPGD(pageDPI, widthInInches, heightInInches));
+	        modifiedList.add(createPTD(pageDPI, widthInInches, heightInInches));
+	        modifiedList.add(new AfpCmdEAG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
+	        modifiedList.add(new AfpCmdEPG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
+	    } catch (Exception e) {
+	        throw new StatementCustomException("Error inserting blank page " + blankPageName, e);
+	    }
+	}
+	
+	private AfpRec createPGD(double pageDPI, double widthInInches, double heightInInches)
+	        throws UnsupportedEncodingException, ParseException {
+
+	    UBIN1 xpgbase = new UBIN1(0);
+	    UBIN1 ypgbase = new UBIN1(0);
+	    UBIN2 xpgunits = new UBIN2((int) pageDPI * 10);
+	    UBIN2 ypgunits = new UBIN2((int) pageDPI * 10);
+	    UBIN3 xpgsize = new UBIN3(inchToDP(widthInInches, pageDPI));
+	    UBIN3 ypgsize = new UBIN3(inchToDP(heightInInches, pageDPI));
+
+	    AfpByteArrayList pgdBody = new AfpByteArrayList();
+	    pgdBody.add(xpgbase.toBytes());
+	    pgdBody.add(ypgbase.toBytes());
+	    pgdBody.add(xpgunits.toBytes());
+	    pgdBody.add(ypgunits.toBytes());
+	    pgdBody.add(xpgsize.toBytes());
+	    pgdBody.add(ypgsize.toBytes());
+	    pgdBody.add(xpgbase.toBytes());
+	    pgdBody.add(xpgbase.toBytes());
+	    pgdBody.add(xpgbase.toBytes());
+
+	    AfpSFIntro pgdIntro = new AfpSFIntro(24, 13870767, (short) 0, 0);
+	    AfpRec pgdRec = new AfpRec((byte) 90, pgdIntro, pgdBody.toBytes());
+	    return new AfpCmdPGD(new AfpCmdRaw(pgdRec)).toAfpRec((short) 0, 0);
+	}
+	
+	private AfpRec createPTD(double pageDPI, double widthInInches, double heightInInches)
+	        throws UnsupportedEncodingException, ParseException {
+
+	    UBIN1 xpbase = new UBIN1(0);
+	    UBIN1 ypbase = new UBIN1(0);
+	    UBIN2 xpunitvl = new UBIN2((int) pageDPI * 10);
+	    UBIN2 ypunitvl = new UBIN2((int) pageDPI * 10);
+	    UBIN3 xpextent = new UBIN3(inchToDP(widthInInches, pageDPI));
+	    UBIN3 ypextent = new UBIN3(inchToDP(heightInInches, pageDPI));
+	    UBIN2 textflags = new UBIN2(0);
+
+	    AfpByteArrayList ptdBody = new AfpByteArrayList();
+	    ptdBody.add(xpbase.toBytes());
+	    ptdBody.add(ypbase.toBytes());
+	    ptdBody.add(xpunitvl.toBytes());
+	    ptdBody.add(ypunitvl.toBytes());
+	    ptdBody.add(xpextent.toBytes());
+	    ptdBody.add(ypextent.toBytes());
+	    ptdBody.add(textflags.toBytes());
+	    ptdBody.add("".getBytes());
+
+	    AfpSFIntro ptdIntro = new AfpSFIntro(9, 13873563, (short) 0, 0);
+	    AfpRec ptdRec = new AfpRec((byte) 90, ptdIntro, ptdBody.toBytes());
+	    return new AfpCmdPTD(new AfpCmdRaw(ptdRec)).toAfpRec((short) 0, 0);
 	}
 
 	public Map<String, AfpRec> insertPageSegs(List<AfpRec> afpRecList, Map<String, String> pSegsSettings,
@@ -2326,3 +2485,4 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		return count;
 	}
 }
+
