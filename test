@@ -1,5 +1,5 @@
 # $Id: //clientsystems/pfg/pdf2print/MAIN/config/corp_map.cfg#59 $
-# $IBSrevision: 2.12.0 $DateTime: 2025/11/06 04:44:56 $
+# $IBSrevision: 2.13.0 $DateTime: 2025/11/06 04:44:56 $
 #
 # Each record is composed of the following pipe-separated fields.  Whitespace before or after 
 # each value will be stripped when read (leaving any embedded whitespace to be treated 
