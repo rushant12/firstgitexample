@@ -13,7 +13,7 @@ CGS72300   - ICSBRPFGOT-1940, Added config setup for wave 6
 GJ632610.n - ICSBRPFGOT-1941, Added config setup for wave 6
 
 
-	
+	"INSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE" : "Y"
 
 
 /config/pfg/GJ632610/afpgen.cfg
