@@ -1,4 +1,5 @@
 package com.broadridge.pdf2print.dataprep.modifyafp;
+
 import static com.broadridge.pdf2print.dataprep.modifyafp.utils.CommonUtils.addCmdIPO;
 import static com.broadridge.pdf2print.dataprep.modifyafp.utils.CommonUtils.addCmdIPS;
 import static com.broadridge.pdf2print.dataprep.modifyafp.utils.CommonUtils.addCmdMCF;
@@ -14,6 +15,8 @@ import static com.broadridge.pdf2print.dataprep.modifyafp.utils.Constants.PAGE_N
 import static com.broadridge.pdf2print.dataprep.modifyafp.utils.Constants.SEND_ADDRESS_LINES;
 import static com.broadridge.pdf2print.dataprep.modifyafp.utils.Constants.SPECIAL_HANDLING_CODE;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
@@ -132,7 +135,7 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (infactAccountNum.length() == 0) {
+		if (isBlank(infactAccountNum)) {
 			messenger.setErrMsgAccount("UKNOWN");
 			throw new StatementCustomException("Unable to find account number.");
 		} else {
@@ -157,13 +160,12 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		boolean doScrapeMoveAddress = false;
 
 		// extract address from position
-		List<List<AfpRec>> updatedStmtPages = new ArrayList<>(); // List to hold the updated pages
 		List<FileCoordinate> fileCoordinatesList = new ArrayList<>();
 		DataPrepConfig config = DataPrepConfig.get();
 		List<HashMap<String, String>> addressList = new ArrayList<>();
 		msger.logDebug("MAIL PIECE IN RAW DATA:" + rawData.statement.getMetaData());
 		List<List<AfpRec>> docAddressAfpRecList = new ArrayList<>();
-		List<AfpRec> docAddress = new ArrayList<>();
+		List<AfpRec> docAddress = null;
 		String foreignSHCode = "78";
 
 		Object isbulkShippingMetaDataValue = rawData.statement.getMetaData().get("is_bulk_shipping");
@@ -189,12 +191,11 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 			toAddressMap = new Gson().fromJson(toAddress.toString().trim(), HashMap.class);
 		}
 		String isBulkShipping = rawData.statement.getMetaData().getString("is_bulk_shipping");
-		List<String> addressLines = new ArrayList<>();
 		if (isBulkShipping.equalsIgnoreCase("Y")) {
 			addressLinesMap = populateAddressLines(rawData.statement.getMetaData());
 			foreignSHCode = "93";
 			if ((scrapeAndMoveAddressMap == null) && (sendAddressMap == null)) {
-				addressLines = new ArrayList<>(addressLinesMap.values());
+				List<String> addressLines = new ArrayList<>(addressLinesMap.values());
 				docAddress = setAddressTLE(rawData, addressLines, addressList, docAddressAfpRecList, foreignSHCode,
 						false);
 			}
@@ -204,8 +205,7 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 				List<String> tleAddressLines = CommonUtils
 						.extractAddressLinesFromInputTLEs(rawData.statement.getStatementRecords());
 				if (!tleAddressLines.isEmpty()) {
-					addressLines = tleAddressLines;
-					docAddress = setAddressTLE(rawData, addressLines, addressList, docAddressAfpRecList, foreignSHCode,
+					docAddress = setAddressTLE(rawData, tleAddressLines, addressList, docAddressAfpRecList, foreignSHCode,
 							true);
 				}
 			}
@@ -217,7 +217,6 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		}
 		if (null != finalSendAddressMap && !finalSendAddressMap.isEmpty()) {
 			JSONArray sendAddressArray = new JSONArray();
-			updatedStmtPages = new ArrayList<>();
 			double sx1 = 0.0;
 			double sy1 = 0.0;
 			double sx2 = 0.0;
@@ -232,12 +231,12 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 					msger.logDebug("  " + entry.getKey() + ": " + entry.getValue());
 				}
 			}
-			
+
 			List<AfpRec> statementRecords = rawData.statement.getStatementRecords();
 			List<AfpRec> statementHeader = extractStatementHeader(rawData.statement);
 			int insertPos = statementRecords.indexOf(statementHeader.get(statementHeader.size() - 1)) + 1;
 			statementRecords.addAll(insertPos, docAddress);
-			
+
 			// Move address
 			List<FileCoordinate> movefileCoordinatesList = new ArrayList<>();
 			sendAddressArray = new JSONArray();
@@ -350,15 +349,11 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 				}
 			}
 		}
-		
-				if (hopperLookupConfig != null && mailPiece != null) {
-		    List<AfpRec> comboTleRecords = insertDocInsertComboTle(
-		            mailPiece,
-		            stmt,   // 
-		            Collections.singletonList(hopperLookupConfig),
-		            insertedTles
-		    );
-		    stmt.setStatementRecords(comboTleRecords);  // update the statement records
+
+		if (hopperLookupConfig != null && mailPiece != null) {
+			List<AfpRec> comboTleRecords = insertDocInsertComboTle(mailPiece, stmt, //
+					Collections.singletonList(hopperLookupConfig), insertedTles);
+			stmt.setStatementRecords(comboTleRecords); // update the statement records
 		}
 
 		// IMM Translate
@@ -426,172 +421,12 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		}
 
 		insertIPOAfterEAG(stmt);
-		
-		// Insert Blank Page After Each Page
-		String insertBlank = DataPrepConfig.get().getINSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE();
-		msger.logDebug("INSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE flag value: " + insertBlank);
-
-		if ("Y".equalsIgnoreCase(insertBlank)) {
-		    msger.logDebug("INSERT_BLANK_PAGE_AFTER_EACH_INPUT_PAGE is enabled.");
-		    stmt.setStatementRecords(insertBlankPageAfterEachInputPage(stmt));
-		}
 
 		insertNewPages(stmt);
 
 		PerformanceMap.addDuration("modifyAFP", System.nanoTime() - startTime);
 
 		return stmt;
-	}
-	
-	private List<AfpRec> insertBlankPageAfterEachInputPage(Statement stmt)
-	        throws StatementCustomException {
-
-	    List<AfpRec> modifiedList = new ArrayList<>();
-	    List<AfpRec> inputRecords = stmt.getStatementRecords();
-	    int pageCounter = 0;
-
-	    for (AfpRec rec : inputRecords) {
-	        String tla = rec.getTla();
-
-	        if (List.of("BPG", "BAG", "EAG", "EPG").contains(tla)) {
-	            pageCounter = handleRenumbering(rec, modifiedList, pageCounter);
-	            if ("EPG".equals(tla)) {
-	                insertBlankPage(modifiedList, pageCounter);
-	            }
-	        } else {
-	            modifiedList.add(rec);
-	        }
-	    }
-
-	    msger.logDebug("Total logical pages (including blanks): " + (pageCounter * 2));
-	    return modifiedList;
-	}
-	
-	private int handleRenumbering(AfpRec rec, List<AfpRec> modifiedList, int pageCounter)
-	        throws StatementCustomException {
-
-	    String tla = rec.getTla();
-
-	    if ("BPG".equals(tla)) {
-	        pageCounter++;
-	    }
-
-	    int newPageNum = (pageCounter * 2) - 1;
-	    String newPageName = String.valueOf(newPageNum);
-	    msger.logDebug("Renumbering " + tla + " record to page " + newPageName);
-
-	    try {
-	        AfpRec newRec;
-
-	        switch (tla) {
-	            case "BPG":
-	                AfpCmdBPG bpgCmd = new AfpCmdBPG(new AfpCmdRaw(rec));
-	                bpgCmd.setPGEName(CommonUtils.trimAndPad(newPageName));
-	                newRec = bpgCmd.toAfpRec((short) 0, 0);
-	                break;
-
-	            case "BAG":
-	                AfpCmdBAG bagCmd = new AfpCmdBAG(CommonUtils.trimAndPad(newPageName));
-	                newRec = bagCmd.toAfpRec((short) 0, 0);
-	                break;
-
-	            case "EAG":
-	                AfpCmdEAG eagCmd = new AfpCmdEAG(CommonUtils.trimAndPad(newPageName));
-	                newRec = eagCmd.toAfpRec((short) 0, 0);
-	                break;
-
-	            case "EPG":
-	                AfpCmdEPG epgCmd = new AfpCmdEPG(CommonUtils.trimAndPad(newPageName));
-	                newRec = epgCmd.toAfpRec((short) 0, 0);
-	                break;
-
-	            default:
-	                newRec = rec;
-	                break;
-	        }
-
-	        modifiedList.add(newRec);
-
-	    } catch (Exception e) {
-	        throw new StatementCustomException("Error renumbering " + tla + " for page " + newPageName, e);
-	    }
-
-	    return pageCounter;
-	}
-	
-	private void insertBlankPage(List<AfpRec> modifiedList, int pageCounter)
-	        throws StatementCustomException {
-
-	    double pageDPI = 1440;
-	    double widthInInches = 8.5;
-	    double heightInInches = 11.0;
-	    int blankPageNum = pageCounter * 2; // even
-	    String blankPageName = String.valueOf(blankPageNum);
-	    msger.logDebug("Inserting blank page " + blankPageName +
-	                   " after input page " + ((pageCounter * 2) - 1));
-
-	    try {
-	        modifiedList.add(new AfpCmdBPG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
-	        modifiedList.add(new AfpCmdBAG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
-	        modifiedList.add(createPGD(pageDPI, widthInInches, heightInInches));
-	        modifiedList.add(createPTD(pageDPI, widthInInches, heightInInches));
-	        modifiedList.add(new AfpCmdEAG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
-	        modifiedList.add(new AfpCmdEPG(CommonUtils.trimAndPad(blankPageName)).toAfpRec((short) 0, 0));
-	    } catch (Exception e) {
-	        throw new StatementCustomException("Error inserting blank page " + blankPageName, e);
-	    }
-	}
-	
-	private AfpRec createPGD(double pageDPI, double widthInInches, double heightInInches)
-	        throws UnsupportedEncodingException, ParseException {
-
-	    UBIN1 xpgbase = new UBIN1(0);
-	    UBIN1 ypgbase = new UBIN1(0);
-	    UBIN2 xpgunits = new UBIN2((int) pageDPI * 10);
-	    UBIN2 ypgunits = new UBIN2((int) pageDPI * 10);
-	    UBIN3 xpgsize = new UBIN3(inchToDP(widthInInches, pageDPI));
-	    UBIN3 ypgsize = new UBIN3(inchToDP(heightInInches, pageDPI));
-
-	    AfpByteArrayList pgdBody = new AfpByteArrayList();
-	    pgdBody.add(xpgbase.toBytes());
-	    pgdBody.add(ypgbase.toBytes());
-	    pgdBody.add(xpgunits.toBytes());
-	    pgdBody.add(ypgunits.toBytes());
-	    pgdBody.add(xpgsize.toBytes());
-	    pgdBody.add(ypgsize.toBytes());
-	    pgdBody.add(xpgbase.toBytes());
-	    pgdBody.add(xpgbase.toBytes());
-	    pgdBody.add(xpgbase.toBytes());
-
-	    AfpSFIntro pgdIntro = new AfpSFIntro(24, 13870767, (short) 0, 0);
-	    AfpRec pgdRec = new AfpRec((byte) 90, pgdIntro, pgdBody.toBytes());
-	    return new AfpCmdPGD(new AfpCmdRaw(pgdRec)).toAfpRec((short) 0, 0);
-	}
-	
-	private AfpRec createPTD(double pageDPI, double widthInInches, double heightInInches)
-	        throws UnsupportedEncodingException, ParseException {
-
-	    UBIN1 xpbase = new UBIN1(0);
-	    UBIN1 ypbase = new UBIN1(0);
-	    UBIN2 xpunitvl = new UBIN2((int) pageDPI * 10);
-	    UBIN2 ypunitvl = new UBIN2((int) pageDPI * 10);
-	    UBIN3 xpextent = new UBIN3(inchToDP(widthInInches, pageDPI));
-	    UBIN3 ypextent = new UBIN3(inchToDP(heightInInches, pageDPI));
-	    UBIN2 textflags = new UBIN2(0);
-
-	    AfpByteArrayList ptdBody = new AfpByteArrayList();
-	    ptdBody.add(xpbase.toBytes());
-	    ptdBody.add(ypbase.toBytes());
-	    ptdBody.add(xpunitvl.toBytes());
-	    ptdBody.add(ypunitvl.toBytes());
-	    ptdBody.add(xpextent.toBytes());
-	    ptdBody.add(ypextent.toBytes());
-	    ptdBody.add(textflags.toBytes());
-	    ptdBody.add("".getBytes());
-
-	    AfpSFIntro ptdIntro = new AfpSFIntro(9, 13873563, (short) 0, 0);
-	    AfpRec ptdRec = new AfpRec((byte) 90, ptdIntro, ptdBody.toBytes());
-	    return new AfpCmdPTD(new AfpCmdRaw(ptdRec)).toAfpRec((short) 0, 0);
 	}
 
 	public Map<String, AfpRec> insertPageSegs(List<AfpRec> afpRecList, Map<String, String> pSegsSettings,
@@ -686,13 +521,10 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 			SBIN3 aXpsOset = new SBIN3(inchToDP(xOffset, Double.toString(DPI)));
 			SBIN3 aYpsOset = new SBIN3(inchToDP(yOffset, Double.toString(DPI)));
 			AfpRec updatedRec = addCmdIPS(pSegName, aXpsOset, aYpsOset);
-			if (updatedRec != null) {
-				if (!pSegRecords.contains(updatedRec)) {
-					pSegRecords.add(updatedRec);
-					if (afpPsegMap != null) {
-						afpPsegMap.put(pageNumberStr, updatedRec);
-					}
-				}
+			if (updatedRec != null && !pSegRecords.contains(updatedRec)) {
+				pSegRecords.add(updatedRec);
+				if (afpPsegMap != null)
+					afpPsegMap.put(pageNumberStr, updatedRec);
 			}
 		}
 
@@ -792,7 +624,7 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 				actualValue = rawData.statement.getMetaData().getString(metaKey);
 				if (actualValue == null || actualValue.trim().length() == 0)
 					actualValue = "";
-			
+
 			} else
 				actualValue = rawValue;
 
@@ -1768,9 +1600,9 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 				double y_offset = (double) overlay.get("y_offset");
 				String overlay_name = (String) overlay.get("overlay_name");
 				AfpRec iporec = createIPORec(overlay_name, x_offset, y_offset, stmt.getStatementRecords(), pageNum);
-				int pageCount =getTotalPagesCount(stmt.getStatementRecords());
+				int pageCount = getTotalPagesCount(stmt.getStatementRecords());
 				if (pageNum <= 0 || pageNum > pageCount) {
-				    continue;
+					continue;
 				}
 				int indexToInsertIPORec = stmt.getIndexForAfpRec(pageNum, "EAG");
 				if (indexToInsertIPORec > 0) {
@@ -2144,58 +1976,58 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 	}
 
 	public List<AfpRec> insertDocInsertComboTle(JSONObject mailPiece, Statement stmt,
-	        List<Map<String, Integer>> hopperLookup, Set<String> insertedTles)
-	        throws StatementCustomException, JSONException {
+			List<Map<String, Integer>> hopperLookup, Set<String> insertedTles)
+			throws StatementCustomException, JSONException {
 
-	    List<String> insertIds = new ArrayList<>();
+		List<String> insertIds = new ArrayList<>();
 
-	    if (!mailPiece.has("insert_ids")) {
-	        throw new StatementCustomException("Missing required field 'insert_ids' in metadata JSON.");
-	    }
+		if (!mailPiece.has("insert_ids")) {
+			throw new StatementCustomException("Missing required field 'insert_ids' in metadata JSON.");
+		}
 
-	    JSONArray insertIdsJson = mailPiece.optJSONArray("insert_ids");
-	    if (insertIdsJson != null) {
-	        for (int i = 0; i < insertIdsJson.length(); i++) {
-	            Object value = insertIdsJson.get(i);
-	            insertIds.add((value == null || JSONObject.NULL.equals(value)) ? "" : value.toString());
-	        }
-	    } else {
-	        msger.logDebug("Insert IDs from metadata is null");
-	    }
+		JSONArray insertIdsJson = mailPiece.optJSONArray("insert_ids");
+		if (insertIdsJson != null) {
+			for (int i = 0; i < insertIdsJson.length(); i++) {
+				Object value = insertIdsJson.get(i);
+				insertIds.add((value == null || JSONObject.NULL.equals(value)) ? "" : value.toString());
+			}
+		} else {
+			msger.logDebug("Insert IDs from metadata is null");
+		}
 
-	    String insertCombo = generateDocInsertCombo(insertIds, hopperLookup);
-	    String tleKey = "DOC_INSERT_COMBO:" + insertCombo;
+		String insertCombo = generateDocInsertCombo(insertIds, hopperLookup);
+		String tleKey = "DOC_INSERT_COMBO:" + insertCombo;
 
-	    if (!insertedTles.contains(tleKey)) {
-	        AfpRec comboTleRecord;
-	        try {
-	            comboTleRecord = new AfpCmdTLE("DOC_INSERT_COMBO", insertCombo).toAfpRec((short) 0, 0);
-	        } catch (UnsupportedEncodingException e) {
-	            e.printStackTrace();
-	            throw new StatementCustomException("Error creating DOC_INSERT_COMBO TLE");
-	        }
+		if (!insertedTles.contains(tleKey)) {
+			AfpRec comboTleRecord;
+			try {
+				comboTleRecord = new AfpCmdTLE("DOC_INSERT_COMBO", insertCombo).toAfpRec((short) 0, 0);
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+				throw new StatementCustomException("Error creating DOC_INSERT_COMBO TLE");
+			}
 
-	        List<AfpRec> headerRecords = extractStatementHeader(stmt);
+			List<AfpRec> headerRecords = extractStatementHeader(stmt);
 
-	        headerRecords.add(comboTleRecord);
+			headerRecords.add(comboTleRecord);
 
-	        List<AfpRec> mergedRecords = new ArrayList<>(headerRecords);
-	        boolean insideBody = false;
-	        for (AfpRec record : stmt.getStatementRecords()) {
-	            if ("BPG".equals(record.getTla())) {
-	                insideBody = true;
-	            }
-	            if (insideBody) {
-	                mergedRecords.add(record);
-	            }
-	        }
+			List<AfpRec> mergedRecords = new ArrayList<>(headerRecords);
+			boolean insideBody = false;
+			for (AfpRec record : stmt.getStatementRecords()) {
+				if ("BPG".equals(record.getTla())) {
+					insideBody = true;
+				}
+				if (insideBody) {
+					mergedRecords.add(record);
+				}
+			}
 
-	        stmt.setStatementRecords(mergedRecords);
+			stmt.setStatementRecords(mergedRecords);
 
-	        insertedTles.add(tleKey);
-	    }
+			insertedTles.add(tleKey);
+		}
 
-	    return stmt.getStatementRecords();
+		return stmt.getStatementRecords();
 	}
 
 	public static String generateDocInsertCombo(List<String> insertIds, List<Map<String, Integer>> hopperLookupList)
@@ -2484,7 +2316,7 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		}
 		return headerRecords;
 	}
-	
+
 	public int getTotalPagesCount(List<AfpRec> afpRecs) {
 		int count = 0;
 		for (AfpRec rec : afpRecs) {
@@ -2494,4 +2326,3 @@ public class MyAnalyzer extends AnalyzerAdapter implements Analyzer {
 		return count;
 	}
 }
-
