@@ -1,1 +1,1 @@
-“Could you please raise a CRQ for the UAT release scheduled for Monday? Let me know if you need any additional details from my side.”
+https://teams.microsoft.com/meet/46063064282802?p=zWk5xicx1lrOduzRNF
